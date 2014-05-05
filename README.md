@@ -8,6 +8,8 @@
 ```
   CREATE ROLE yav WITH LOGIN;
   CREATE DATABASE yav WITH OWNER=yav;
+  # В БД yav от админа выполнить:
+  CREATE EXTENSION postgis;
 ```
 * установить зависимости:
     osm2pgsql
