@@ -34,18 +34,20 @@ for k,v in opts:
 
 config = ConfigParser.SafeConfigParser()
 config.read(cfg_files)
-       
+
 
 db_host = config.get('db', 'host', 'localost')
 db_name = config.get('db', 'name', 'yav')
 db_user = config.get('db', 'user', 'somebody')
-db_pass = config.get('db', 'password', '')
 
-conn = connect('dbname=%s user=%s host=%s password=%s' % (db_name, db_user, db_host, db_pass) )
+conn = connect("dbname='%s' user='%s' host='%s' " % (db_name, db_user, db_host) )
 conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 
 sqllines = []
 for i in args:
+    print """
+    Executing file %s.
+    """ % (i, )
     f = open(i, 'r')
     if not action:
         r = re.compile(ur'\/\*\s+\$\w+\$(.+)\$\w+\$\s+\*\/', re.M+re.S+re.I)
@@ -91,10 +93,10 @@ for l in sqllines:
 
         # обработка дерективы ..
         m = re.match(ur'\-\-\@\:\s*log\s+(.*)$', l)
-        if m: 
+        if m:
             log(m.group(1))
         m = re.match(ur'\-\-\@\:\s*level\s+([\-\+])$', l)
-        if m: 
+        if m:
             log_level = log_level + 1*int(m.group(1) + '1')
 
     else:
