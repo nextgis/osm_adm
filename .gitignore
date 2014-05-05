@@ -1,6 +1,7 @@
-# Archives of shp files
+# Archives of dumps
 publish/adm
 publish/dc
+osm_dumps
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

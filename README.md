@@ -3,6 +3,19 @@
 
 Данные по АТД РФ в shape-формате из проекта OSM с атрибутикой из классификаторов
 
+Установка:
+* создание БД yav:
+```
+  CREATE ROLE yav WITH LOGIN;
+  CREATE DATABASE yav WITH OWNER=yav;
+```
+* установить зависимости:
+    osm2pgsql
+    в virtualenv поставить:
+        sqlparse
+        psycopg2
+
+
 Текущее состояние проекта:
 
 * основная обработка происходит в daily-run скрипте, который вызвается через cron/anacron
@@ -13,7 +26,7 @@
     source /home/osm_adm/.profile
 
     Загрузка через osm2pgsql файла дампа OSM (на сегодня файл не существует) в базу "host=localhost dbname=yav user=yav":
-    ~/yav-osm2pgsql/run
+    yav-osm2pgsql/run
 
     Запуск на выполнение содержимого sql-файлов:
     ~/bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-ru/*-*.sql
@@ -35,17 +48,17 @@
         90-bounary-error.sql
 
     Запуск sql-файла:
-    ~/bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-adm/*-*.sql
+    bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-adm/*-*.sql
         00-prepeare.sql
 
 
     Экспорт таблиц постгрес в шейпы, расчет статистик по количеству импортированых объектов, экспорт данных в таблицу постгрес gen, архивация шейпов
-    ~/yav-adm/export
+    yav-adm/export
 
     Запуск sql-файла:
-    ~/bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-dc/*-*.sql
+    bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-dc/*-*.sql
         00-prepeare.sql
 
     Экспорт таблиц постгрес в шейпы, расчет статистик по количеству импортированых объектов
-    ~/yav-dc/export
+    yav-dc/export
 ```
