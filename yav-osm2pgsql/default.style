@@ -1,0 +1,51 @@
+# OsmType  Tag          DataType     Flags
+node,way   	note         	text         delete
+node,way        source       	text         delete
+
+node,way	official_status text         linear
+node,way	place           text	     polygon
+node,way	name            text         linear
+node,way        name:en         text         linear
+node,way	place_name      text         linear
+node,way	official_name   text         linear
+node,way	alt_name        text         linear
+node,way	kladr:name      text         linear
+node,way	boundary        text         linear
+node,way 	admin_level     text         linear
+node,way 	population      text         linear
+node,way 	wikipedia       text         linear
+
+node,way	oktmo:user      text
+node,way	okato:user      text
+node,way	kladr:user      text
+
+#node,way	cladr:code      text
+#node,way	cladr:name      text
+#node,way	cladr:suffix    text
+#node,way	cladr:note      text
+node,way	addr:postcode   text
+
+node,way	building        text    polygon
+node,way	addr:street     text
+node,way	landuse		text	polygon
+
+# для maxspeed
+node,way	highway		    text	linear
+node,way	maxspeed	    text	linear
+node,way	maxspeed:practical  text	linear
+node,way	lanes		    text	linear
+node,way	surface             text	linear
+
+# для гидро
+node,way	  waterway  text	polygon
+node,way	  natural   text	polygon
+
+node,way   area         text         # hard coded support for area=1/yes => polygon is in osm2pgsql
+way        way_area     real         # This is calculated during import
+
+# The following entries can be used with the --extra-attributes option
+# to include the username, userid, version & timstamp in the DB
+#node,way  osm_user       text
+#node,way  osm_uid        text
+#node,way  osm_version    text
+#node,way  osm_timestamp  text

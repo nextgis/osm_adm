@@ -1,0 +1,29 @@
+TRUNCATE boundary_output;
+
+INSERT INTO boundary_output (id, geom, polygon_osm_id, osm_name, admin_level, oktmo_code, osm_name_en)
+SELECT id, geom, polygon_osm_id, name, admin_level, oktmo, name_en
+FROM boundary
+WHERE polygon_osm_id = -60189 OR (
+  oktmo IS NOT NULL
+) OR (
+  admin_level = 3
+);
+
+UPDATE boundary_output SET
+  okato_code = o2o.okato
+FROM oktmo_to_okato o2o WHERE o2o.oktmo = oktmo_code;
+
+UPDATE boundary_output SET
+  oktmo_name = raw
+FROM oktmo WHERE code = oktmo_code;
+
+UPDATE boundary_output SET
+  okato_name = raw
+FROM okato WHERE code = okato_code;
+
+UPDATE boundary_output SET
+  area = ST_Area(ST_Transform(geom, 99007))/(1000*1000),
+  name_lat = translit(osm_name);
+
+
+SELECT id, polygon_osm_id, osm_name, admin_level, oktmo_code, okato_code FROM boundary_output; 

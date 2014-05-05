@@ -1,0 +1,2 @@
+#!/bin/bash
+/usr/local/bin/osm2pgsql --slim -C 2048 -l -c -d yav -U yav -G -H localhost -S ~/yav-osm2pgsql/default.style -p osm /usr/home/dezhin/osm_dump/dump/latest/RU.osm.bz2

@@ -1,0 +1,4 @@
+#!/bin/bash
+~/util/export_layer dc dc "SELECT * FROM dc;"
+
+~/util/stats ~/publish/dc dc

@@ -1,0 +1,104 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import sys
+import getopt
+
+import ConfigParser
+
+
+import sqlparse
+from sqlparse.tokens import Token
+from sqlparse.sql import Comment
+
+from psycopg2 import connect, extensions
+
+from time import localtime, strftime
+import re
+
+cfg_files = []
+dry_run = True
+action = None
+
+opts, args = getopt.getopt(sys.argv[1:], '', [
+        'run',
+        'action=',
+        'cfg='])
+
+for k,v in opts:
+    if k == '--run':
+        dry_run = False
+    elif k == '--action':
+        action = v
+    elif k == '--cfg':
+        cfg_files.append(v)
+
+config = ConfigParser.SafeConfigParser()
+config.read(cfg_files)
+       
+
+db_host = config.get('db', 'host', 'localost')
+db_name = config.get('db', 'name', 'yav')
+db_user = config.get('db', 'user', 'somebody')
+db_pass = config.get('db', 'password', '')
+
+conn = connect('dbname=%s user=%s host=%s password=%s' % (db_name, db_user, db_host, db_pass) )
+conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+
+sqllines = []
+for i in args:
+    f = open(i, 'r')
+    if not action:
+        r = re.compile(ur'\/\*\s+\$\w+\$(.+)\$\w+\$\s+\*\/', re.M+re.S+re.I)
+        sqllines.extend(r.sub('', f.read()).split('\n'))
+    else:
+        r = re.compile(ur'\/\*\s+\$%s\$(.+)\$%s\$\s+\*\/' % (action, action), re.M+re.S)
+        #print f.read()
+        m = r.search(f.read())
+        if m:
+            sqllines.extend(m.group(1).split('\n'))
+    f.close()
+
+log_level = 0
+
+def log(m):
+    print "%s  " % (strftime("%Y-%b-%d %H:%M:%S", localtime())) + "  "*log_level + m
+    sys.stdout.flush()
+
+def run(sql):
+    q = sql; #"\n".join(sql.split("\n"))
+    for op in sqlparse.split(q + '\nSELECT 1;')[:-1]:
+        if dry_run:
+            print op
+        else:
+            try:
+                cur = conn.cursor()
+                res = cur.execute(op)
+            except Exception as e:
+                raise
+        # m = []
+        # if op.split('\n') == 1:
+        #     m.append(op)
+        # if cur.rowcount <> -1:
+        #     m.append("rows=%d" % cur.rowcount)
+        #log("; ".join(m))
+
+buf = [];
+for l in sqllines:
+    if l[:4] == '--@:':
+        if len(buf)>0:
+            run('\n'.join(buf))
+        buf = []
+
+        # обработка дерективы ..
+        m = re.match(ur'\-\-\@\:\s*log\s+(.*)$', l)
+        if m: 
+            log(m.group(1))
+        m = re.match(ur'\-\-\@\:\s*level\s+([\-\+])$', l)
+        if m: 
+            log_level = log_level + 1*int(m.group(1) + '1')
+
+    else:
+        buf.append(l)
+
+if len(buf) > 0:
+    run('\n'.join(buf))

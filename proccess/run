@@ -1,0 +1,12 @@
+#!/bin/bash
+/usr/bin/touch /home/osm_adm/test
+cd /home/osm_adm/proccess
+QEXPORT=`cat source.sql`
+
+echo "\\copy ( $QEXPORT) TO '/tmp/osm-adm' " | /usr/local/bin/psql -U guest osm && \
+echo "TRUNCATE boundary; TRUNCATE oktmo_match;" | /usr/local/bin/psql -U osm_adm osm_adm && \
+echo "\\copy boundary (polygon_osm_id, name, admin_level, geom, name_all, oktmo_user, name_en) FROM '/tmp/osm-adm'" | \
+  /usr/local/bin/psql -U osm_adm -e osm_adm && \
+cat proccess.sql | /usr/local/bin/psql -U osm_adm osm_adm && \
+cat output.sql | /usr/local/bin/psql  -U osm_adm osm_adm && \
+./export

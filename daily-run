@@ -1,0 +1,9 @@
+#!/bin/bash
+source /etc/profile
+source /home/osm_adm/.profile
+~/yav-osm2pgsql/run
+~/bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-ru/*-*.sql
+~/bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-adm/*-*.sql
+~/yav-adm/export
+~/bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-dc/*-*.sql
+~/yav-dc/export

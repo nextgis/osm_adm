@@ -1,0 +1,15 @@
+#!/bin/bash
+
+~/util/export_layer adm adm2_country   "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, ''::text AS name_en, name_lat, area, geom FROM adm_boundary WHERE admin_level = 2 AND geom IS NOT NULL;"
+~/util/export_layer adm adm3_federal   "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, ''::text AS name_en, name_lat, area, geom FROM adm_boundary WHERE admin_level = 3 AND geom IS NOT NULL;"
+~/util/export_layer adm adm4_region    "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, okato_code, okato_name, oktmo_code, oktmo_name, ''::text AS name_en, name_lat, area, adm3_id, adm3_name, geom FROM adm_boundary WHERE admin_level = 4 AND geom IS NOT NULL;"
+~/util/export_layer adm adm6_district  "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, okato_code, okato_name, oktmo_code, oktmo_name, ''::text AS name_en, name_lat, area, adm3_id, adm3_name, adm4_id, adm4_name, geom FROM adm_boundary WHERE admin_level = 6 AND geom IS NOT NULL;"
+~/util/export_layer adm adm8_municipal "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, okato_code, okato_name, oktmo_code, oktmo_name, ''::text AS name_en, name_lat, area, adm3_id, adm3_name, adm4_id, adm4_name, geom FROM adm_boundary WHERE admin_level = 8 AND geom IS NOT NULL;"
+
+~/util/export_layer adm adm2_country_f   "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, ''::text AS name_en, name_lat, area, geom_f FROM adm_boundary WHERE admin_level = 2;"
+~/util/export_layer adm adm3_federal_f   "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, ''::text AS name_en, name_lat, area, geom_f FROM adm_boundary WHERE admin_level = 3;"
+~/util/export_layer adm adm4_region_f    "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, okato_code, okato_name, oktmo_code, oktmo_name, ''::text AS name_en, name_lat, area, adm3_id, adm3_name, geom_f FROM adm_boundary WHERE admin_level = 4;"
+~/util/export_layer adm adm6_district_f  "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, okato_code, okato_name, oktmo_code, oktmo_name, ''::text AS name_en, name_lat, area, adm3_id, adm3_name, adm4_id, adm4_name, geom_f FROM adm_boundary WHERE admin_level = 6;"
+~/util/export_layer adm adm8_municipal_f "SELECT id, polygon_osm_id AS osm_id, osm_name AS name, okato_code, okato_name, oktmo_code, oktmo_name, ''::text AS name_en, name_lat, area, adm3_id, adm3_name, adm4_id, adm4_name, geom_f FROM adm_boundary WHERE admin_level = 8;"
+
+~/util/stats ~/publish/adm adm2_country_f adm3_federal_f adm4_region_f adm6_district_f adm8_municipal_f

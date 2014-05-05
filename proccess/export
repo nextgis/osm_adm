@@ -1,0 +1,33 @@
+#!/bin/bash
+
+ROOT='/home/osm_adm/pub'
+DNAME=`date "+%Y%m%d"`
+
+cd $ROOT
+rm -rf $DNAME
+mkdir $DNAME
+cd $DNAME
+mkdir .meta
+for l in adm2_country adm3_federal adm4_region adm6_district
+do
+  /usr/local/bin/pgsql2shp -f $l -u osm_adm osm_adm v_$l
+  cp /home/osm_adm/proccess/include.cpg $l.cpg
+  /usr/local/bin/shp2pgsql -W LATIN1 -d -s 4326 $l $l | /usr/local/bin/psql -q -U osm_adm osm_adm
+  echo "GRANT SELECT ON TABLE $l TO guest;" | /usr/local/bin/psql -q -U osm_adm osm_adm
+  /usr/local/bin/shp2pgsql -W LATIN1 -d -s 4326 $l $l | /usr/local/bin/psql -q -U osm_adm gen
+  echo "GRANT SELECT ON TABLE $l TO guest;" | /usr/local/bin/psql -q -U osm_adm gen
+  /usr/local/scripts/hexalter $l.dbf 0x1D=0
+  for ext in shp shx dbf prj cpg
+  do 
+    /usr/local/bin/7z a $l.7z $l.$ext 2> /dev/null
+    /usr/local/bin/7z a admX_all.7z $l.$ext 2> /dev/null
+    rm $l.$ext
+  done
+  /usr/local/bin/7z a $l.7z /home/osm_adm/proccess/README.txt
+  echo "SELECT COUNT(*) FROM $l;"|/usr/local/bin/psql -U osm_adm osm_adm|tail -3|head -1 > .meta/$l.count
+done
+/usr/local/bin/7z a admX_all.7z /home/osm_adm/proccess/README.txt 2> /dev/null
+
+cd $ROOT
+ln -sfh $DNAME current
+

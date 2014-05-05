@@ -1,0 +1,81 @@
+#!/usr/bin/perl -w
+use POSIX qw(ceil floor);
+use List::Util qw(min max);
+use LWP::Simple qw(getstore);
+
+($folder, @compare) = @ARGV;
+chdir $folder;
+
+sub compare_st {
+  foreach (@compare) {
+    if ($$a{$_} != $$b{$_}) {
+      return $$b{$_} <=> $$a{$_};
+    };
+  };
+  return $$b{v} cmp $$a{v};
+};
+
+sub compare_v {
+  return $$b{v} cmp $$a{v};
+};
+
+@versions = ();
+for (<*>) {
+  if ( /\d{8}/ ) {
+    my $v = $_;
+    my $h = {};
+    foreach (@compare) {
+      open(F, "< $v/.meta/$_") or next;
+      $$h{$_} = <F>;
+      chop $$h{$_};
+      close(F);
+    };
+    if (length(keys %$h) == 0) {
+      next;
+    };
+    $$h{v} = $v;
+    push(@versions, $h);
+  };
+};
+
+@sorted_st = sort compare_st @versions;
+$stable_h = $sorted_st[0];
+$stable = $$stable_h{v};
+print STDERR "stable: $stable\n";
+system("ln -sfh $stable stable");
+
+@sorted_v = sort compare_v @versions;
+$latest_h = $sorted_v[0];
+$latest = $$latest_h{v};
+print STDERR "latest: $latest\n";
+system("ln -sfh $latest latest");
+
+foreach $l (@compare) {
+  @series = ();
+  foreach $h (reverse @sorted_v) {
+    push(@series, $$h{$l});
+  };
+  @range = (floor(min(@series) / 10) * 10, ceil(max(@series) / 10) * 10);
+  $range = join(',', @range);
+  $url = "http://chart.apis.google.com/chart?chxr=0,$range&chxt=y&chs=600x200&cht=ls&chco=3D7930,FF9900&chds=$range&chd=t:" .  join(',', @series) . "&chg=14.3,-1,1,1 &chls=2,4,0|1&chm=B,C5D4B5BB,0,0,0\n";
+  getstore($url, "$folder/.stats/$l.png");  
+};
+
+open FH, "> $folder/.stats/data.html";
+print FH "<table>\n<thead><tr><th>v</th>";
+foreach $l (@compare) {
+  print FH "<th>$l</th>";
+};
+
+print FH "</tr></thead>\n";
+
+foreach $h (reverse @sorted_v) {
+  print FH '<tr><td>' . $$h{v} . '</td>';
+  foreach $l (@compare) {
+    print FH '<td style="text-align: right;">' .  $$h{$l}  . '</td>';
+  };
+  print FH "</tr>\n";
+};
+
+
+close FH;

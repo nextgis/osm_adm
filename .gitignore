@@ -1,3 +1,7 @@
+# Archives of shp files
+publish/adm
+publish/dc
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -51,4 +55,7 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# Archives
+*.7z
 

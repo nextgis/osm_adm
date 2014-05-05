@@ -1,0 +1,52 @@
+#!/bin/bash
+
+P2S="-u yav yav "
+
+PROJ=$1
+LAYER=$2
+QUERY=$3
+
+
+echo -n "Exporting layer '$LAYER'..."
+
+ROOT=/home/osm_adm/publish/$PROJ
+DIR=$ROOT/`date "+%Y%m%d"`
+
+mkdir $DIR &>/dev/null
+mkdir $DIR/.meta &>/dev/null
+ln -sfh $DIR $ROOT/current
+
+echo -n "pgsql2shp..."
+pgsql2shp -f $DIR/$LAYER $P2S "$QUERY" &>/dev/null
+
+# feature count
+FEATURE_COUNT=`ogrinfo -al -geom=NO $DIR/$LAYER.shp|grep 'Feature Count'|sed 's/.*: \([0-9]*\).*/\1/g'`
+echo "$FEATURE_COUNT">$DIR/.meta/$LAYER
+
+echo -n 'hexalter...'
+# patch for ArcGIS
+cp /home/osm_adm/util/include.cpg $DIR/$LAYER.cpg &>/dev/null
+/usr/local/scripts/hexalter $DIR/$LAYER.dbf 0x1D=0 &>/dev/null
+
+echo -n 'load to gen...'
+/usr/local/bin/shp2pgsql -d -s 4326 $DIR/$LAYER ru_$LAYER 2> /dev/null | /usr/local/bin/psql -q -U yav gen &> /dev/null
+echo "GRANT SELECT ON TABLE ru_$LAYER TO guest;" | /usr/local/bin/psql -q -U yav gen &> /dev/null
+
+# add files to archives and delete original
+echo -n 'pack...'
+for ext in shp shx dbf prj cpg
+do 
+  /usr/local/bin/7z a $DIR/$LAYER.7z $DIR/$LAYER.$ext &>/dev/null
+  if [ "$LAYER" != "$PROJ" ]; then
+    /usr/local/bin/7z a $DIR/$PROJ.7z  $DIR/$LAYER.$ext &>/dev/null
+  fi
+  rm $DIR/$LAYER.$ext &>/dev/null
+done
+
+# add readme files
+/usr/local/bin/7z a $DIR/$LAYER.7z $ROOT/README.txt &>/dev/null
+if [ "$LAYER" != "$PROJ" ]; then
+  /usr/local/bin/7z a $DIR/$PROJ.7z $ROOT/README.txt &>/dev/null
+fi
+		 
+echo 'OK'
