@@ -17,7 +17,12 @@
         sqlparse
         psycopg2
 * импортировать классификаторы окато и октмо, для этого:
-    установить clscol: https://github.com/dezhin/clscol и импортировать данные классификаторов в БД согласно инструкции
+    установить clscol и clscol-data: https://github.com/dezhin/clscol, https://github.com/dezhin/clscol-data и импортировать данные классификаторов в БД согласно инструкции.
+	(
+	    загрузка классификатора командой:  
+	    env/bin/clscol import --db postgresql://yav@localhost/yav okato  clscol-data/okato/okato-154.yaml
+	    env/bin/clscol import --db postgresql://yav@localhost/yav oktmo  clscol-data/oktmo/oktmo-079.yaml 
+	)
 
 
 Текущее состояние проекта:
