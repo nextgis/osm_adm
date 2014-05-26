@@ -1,13 +1,14 @@
 /* $MD_INIT$
 
 --@: log table: boundary
+
 DROP TABLE IF EXISTS boundary;
 
 CREATE TABLE boundary
 (
-  id integer NOT NULL,
-  polygon_osm_id integer,
-  capital_point_osm_id integer,
+  id bigint NOT NULL,
+  polygon_osm_id bigint,
+  capital_point_osm_id bigint,
   "name" character varying(150),
   admin_level integer,
   geom geometry,
@@ -17,18 +18,18 @@ CREATE TABLE boundary
   v_status text[],
   oktmo character(8),
   oktmo_name character varying(150),
-  parents integer[],
-  parent_oktmo integer,
-  parents_oktmo integer[],
-  childs_oktmo integer[],
+  parents bigint[],
+  parent_oktmo bigint,
+  parents_oktmo bigint[],
+  childs_oktmo bigint[],
   geom_okato geometry,
   federal_subject character varying(100),
   oktmo_user character(8),
   name_en character varying(255),
-  parent integer,
+  parent bigint,
   CONSTRAINT boundary_id PRIMARY KEY (id),
-  CONSTRAINT enforce_dims_geom CHECK (ndims(geom) = 2),
-  CONSTRAINT enforce_srid_geom CHECK (srid(geom) = 4326)
+  CONSTRAINT enforce_dims_geom CHECK (st_ndims(geom) = 2),
+  CONSTRAINT enforce_srid_geom CHECK (st_srid(geom) = 4326)
 );
 
 CREATE INDEX boundary_admin_level ON boundary USING btree (admin_level);
@@ -41,8 +42,8 @@ DROP TABLE IF EXISTS boundary_is_in;
 
 CREATE TABLE boundary_is_in
 (
-  parent integer,
-  child integer
+  parent bigint,
+  child bigint
 );
 
 CREATE INDEX boundary_is_in_child  ON boundary_is_in USING btree (child);
@@ -56,18 +57,18 @@ $MD_INIT$ */
 TRUNCATE boundary;
 
 INSERT INTO boundary (id, polygon_osm_id, name, admin_level, geom, name_all, oktmo_user)
-SELECT 
+SELECT
   osm_id AS id,
   osm_id AS polygon_osm_id,
   COALESCE(name, place_name, '<noname>') AS name,
-  CASE 
-    WHEN admin_level ~ '[0-9]+' THEN admin_level::int 
+  CASE
+    WHEN admin_level ~ '[0-9]+' THEN admin_level::int
     ELSE NULL
   END AS admin_level,
   way AS geom,
-  CASE 
-    WHEN name IS NULL THEN place_name 
-    ELSE name 
+  CASE
+    WHEN name IS NULL THEN place_name
+    ELSE name
   END || COALESCE(';' || alt_name, '') || COALESCE(';' || official_name, '') AS name_all,
   substring("oktmo:user" from 1 for 8) AS oktmo_user
 FROM osm_polygon
@@ -82,22 +83,22 @@ UPDATE boundary SET
   capital_point_osm_id = t.capital_point_osm_id
 FROM (
     SELECT id,
-           MIN(substring(members[i],2)::int) AS capital_point_osm_id
+           MIN(substring(members[i],2)::bigint) AS capital_point_osm_id
     FROM (
-        SELECT b.id, members, generate_series(1, array_upper(members,1)) i 
+        SELECT b.id, members, generate_series(1, array_upper(members,1)) i
         FROM boundary b INNER JOIN osm_rels r ON r.id = -b.polygon_osm_id
       ) t
     WHERE i % 2 = 1 AND substring(members[i],1,1) = 'n' AND members[i+1] IN ('admin_centre', 'capital', 'admin_center')
     GROUP BY id
-  ) t 
+  ) t
 WHERE t.id = boundary.id;
 
 --@: log building hierarchy
 TRUNCATE boundary_is_in;
-  
+
 INSERT INTO boundary_is_in (parent, child)
 SELECT p.id, c.id
-FROM boundary p, boundary c 
+FROM boundary p, boundary c
 WHERE c.id <> p.id AND c.geom && p.geom AND ((ST_Within(c.geom, p.geom) AND NOT ST_Equals(c.geom, p.geom)) OR (ST_Equals(c.geom, p.geom) AND c.admin_level > p.admin_level));
 
 UPDATE boundary SET parent = NULL;
