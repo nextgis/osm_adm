@@ -4,6 +4,7 @@
 Данные по АТД РФ в shape-формате из проекта OSM с атрибутикой из классификаторов
 
 Установка:
+----------
 * создание БД yav:
 ```
   CREATE ROLE yav WITH LOGIN;
@@ -17,15 +18,25 @@
         sqlparse
         psycopg2
 * импортировать классификаторы окато и октмо, для этого:
-    установить clscol и clscol-data: https://github.com/dezhin/clscol, https://github.com/dezhin/clscol-data и импортировать данные классификаторов в БД согласно инструкции.
-	(
-	    загрузка классификатора командой:  
-	    env/bin/clscol import --db postgresql://yav@localhost/yav okato  clscol-data/okato/okato-154.yaml
-	    env/bin/clscol import --db postgresql://yav@localhost/yav oktmo  clscol-data/oktmo/oktmo-079.yaml 
-	)
-
+        # Вероятно (структура создаваемых таблиц получается другая, чем требуется в последствии в скриптах yav-ru/*-*.sql) нужно установить clscol и clscol-data: https://github.com/dezhin/clscol, https://github.com/dezhin/clscol-data и импортировать данные классификаторов в БД согласно инструкции.
+        # (
+        #   загрузка классификатора командой:
+        #   env/bin/clscol import --db postgresql://yav@localhost/yav okato  clscol-data/okato/okato-154.yaml
+        #   env/bin/clscol import --db postgresql://yav@localhost/yav oktmo  clscol-data/oktmo/oktmo-079.yaml
+        # )
+        # Скорее всего эти данные нужны для скриптов ru_classifier/shell
+    Создать таблицы okato и oktmo при помощи скриптов ru_classifier/shell:
+        ./shell.py --create --load --from data/okato okato
+        ./shell.py --create --load --from data/oktmo oktmo
+        (
+            shell работает от администратора и создает таблицы okato и oktmo недоступные для пользователя yav. Нужно выяснить, зачем shell права админа. Пока же передаю руками таблицы пользователю yav:
+            ALTER TABLE okato OWNER TO yav;
+            ALTER TABLE oktmo OWNER TO yav;
+            ALTER TABLE oktmo_okato OWNER TO yav;
+        )
 
 Текущее состояние проекта:
+---------------------------
 
 * основная обработка происходит в daily-run скрипте, который вызвается через cron/anacron
 * daily-run последовательно производит следующие действия:
