@@ -1,3 +1,12 @@
+CREATE TABLE IF NOT EXISTS oktmo_to_okato (
+    grp character varying(10) NOT NULL,
+    oktmo character varying(8) NOT NULL,
+    okato character varying(11),
+    m integer
+);
+
+TRUNCATE oktmo_to_okato;
+
 -- временные таблицы, куда собираем все для сопоставления
 DROP TABLE IF EXISTS tmp_o2o_okato;
 CREATE TEMP TABLE tmp_o2o_okato (
@@ -15,7 +24,7 @@ INSERT INTO tmp_o2o_okato (grp, okato)
     -- субъекты
     SELECT 'subject', code FROM okato
     WHERE is_subject
-  UNION 
+  UNION
     -- районы и города областного значения
     SELECT 'district', code FROM okato
     WHERE lvl = 2 AND not is_subject;
@@ -26,13 +35,12 @@ INSERT INTO tmp_o2o_oktmo (grp, oktmo)
   UNION
     -- городские округа и муниципальные районы
     SELECT 'district', code FROM oktmo
-    WHERE cls IN ('го', 'мр');  
+    WHERE cls IN ('го', 'мр');
 
-TRUNCATE oktmo_to_okato;
 
-INSERT INTO oktmo_to_okato 
+INSERT INTO oktmo_to_okato
 WITH oktmo_to_okato (grp, oktmo, okato) AS (
-  WITH 
+  WITH
     okato_top (grp, okato_root, okato_child)AS (
       -- grp         : группа для сравнения
       -- okato_root  : код верхнего уровня, на котором ищется соответствие
@@ -42,7 +50,7 @@ WITH oktmo_to_okato (grp, oktmo, okato) AS (
           FROM tmp_o2o_okato
         UNION
           SELECT top.grp, top.root, okato.code
-          FROM okato_tree top 
+          FROM okato_tree top
             LEFT JOIN okato ON parent = top.child
             LEFT JOIN tmp_o2o_okato ON tmp_o2o_okato.okato = okato.code AND top.grp = tmp_o2o_okato.grp
           WHERE okato.code IS NOT NULL
@@ -55,14 +63,14 @@ WITH oktmo_to_okato (grp, oktmo, okato) AS (
   ),
   oktmo_settlement (grp, oktmo_code, okato_code) AS (
     -- grp          :
-    -- oktmo_code   : 
+    -- oktmo_code   :
     -- okato_code   :
-    WITH 
+    WITH
       RECURSIVE child_search(grp, root,  child) AS (
           SELECT tmp_o2o_oktmo.grp AS grp, code AS root, code AS child
           FROM oktmo
             LEFT JOIN  tmp_o2o_oktmo ON tmp_o2o_oktmo.oktmo = oktmo.code
-          WHERE 
+          WHERE
             tmp_o2o_oktmo.grp IS NOT NULL
         UNION
           SELECT top.grp, top.root, t.code
@@ -72,17 +80,17 @@ WITH oktmo_to_okato (grp, oktmo, okato) AS (
       )
     SELECT grp AS grp, root, oktmo_okato.okato
     FROM child_search
-      LEFT JOIN oktmo_okato ON child_search.child = oktmo_okato.oktmo 
+      LEFT JOIN oktmo_okato ON child_search.child = oktmo_okato.oktmo
   )
   SELECT oktmo_settlement.grp AS grp,
          oktmo_code AS oktmo,
          okato_root AS okato,
          COUNT(DISTINCT okato_child) AS m
-         
-  FROM oktmo_settlement 
+
+  FROM oktmo_settlement
     LEFT JOIN okato_top ON oktmo_settlement.grp = okato_top.grp AND oktmo_settlement.okato_code = okato_top.okato_child
   GROUP BY oktmo_settlement.grp, oktmo_code, okato_root
-) 
+)
 SELECT t.grp, t.oktmo, MIN(t.okato) AS okato, MAX(t.m) AS m
 FROM (SELECT grp, oktmo, okato, MAX(m) AS m FROM oktmo_to_okato GROUP BY grp, oktmo, okato) m
   LEFT JOIN oktmo_to_okato t ON m.grp = t.grp AND m.oktmo = t.oktmo AND m.okato = t.okato AND m.m = t.m
