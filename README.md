@@ -15,9 +15,10 @@
 * установить зависимости:
     osm2pgsql
     в virtualenv поставить:
-        sqlparse
-        psycopg2
+        * sqlparse
+        * psycopg2
 * импортировать классификаторы окато и октмо, для этого:
+    ```
         # Вероятно (структура создаваемых таблиц получается другая, чем требуется в последствии в скриптах yav-ru/*-*.sql) нужно установить clscol и clscol-data: https://github.com/dezhin/clscol, https://github.com/dezhin/clscol-data и импортировать данные классификаторов в БД согласно инструкции.
         # (
         #   загрузка классификатора командой:
@@ -25,7 +26,9 @@
         #   env/bin/clscol import --db postgresql://yav@localhost/yav oktmo  clscol-data/oktmo/oktmo-079.yaml
         # )
         # Скорее всего эти данные нужны для скриптов ru_classifier/shell
+    ```
     Создать таблицы okato и oktmo при помощи скриптов ru_classifier/shell:
+    ```
         ./shell.py --create --load --from data/okato okato
         ./shell.py --create --load --from data/oktmo oktmo
         (
@@ -34,7 +37,7 @@
             ALTER TABLE oktmo OWNER TO yav;
             ALTER TABLE oktmo_okato OWNER TO yav;
         )
-
+    ```
 Текущее состояние проекта:
 ---------------------------
 
@@ -66,6 +69,9 @@
         72-boundary-browser-centroid.sql
         80-boundary-stat.sql
         90-bounary-error.sql
+
+        Замечание:
+            40-settlements.sql выдает предупреждение gserialized_gist_joinsel: jointype 1 not supported. Нужно разобраться, насколько это серьезно
 
     Запуск sql-файла:
     bin/python2.6 yav-sql-run --run --cfg yav.cfg yav-adm/*-*.sql

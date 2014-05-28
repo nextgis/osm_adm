@@ -5,9 +5,9 @@ DROP TABLE IF EXISTS settlement;
 
 CREATE TABLE settlement
 (
-  id integer,
-  point_osm_id integer,
-  polygon_osm_id integer,
+  id bigint,
+  point_osm_id bigint,
+  polygon_osm_id bigint,
   "name" character varying(200),
   place character varying(50),
   geom_point geometry,
@@ -20,9 +20,9 @@ CREATE TABLE settlement
   -- v_name character varying(100)[],
   -- v_status character varying(100)[],
   name_all text,
-  parent_boundary_oktmo integer,
-  parents_oktmo integer[],
-  parent_boundary_oktmo_polygon_osm_id integer,
+  parent_boundary_oktmo bigint,
+  parents_oktmo bigint[],
+  parent_boundary_oktmo_polygon_osm_id bigint,
   okato_user character varying(11),
   admin_levels varchar(3)[],
   kladr_user text,
@@ -47,7 +47,7 @@ $MD_INIT$ */
 
 DROP TABLE IF EXISTS tmp_src_settlement_polygon, tmp_src_settlement_point;
 CREATE TEMP TABLE tmp_src_settlement_polygon (
-  osm_id int,
+  osm_id bigint,
   name text,
   place text,
   okato_user text,
@@ -58,7 +58,7 @@ CREATE TEMP TABLE tmp_src_settlement_polygon (
 );
 
 CREATE TEMP TABLE tmp_src_settlement_point (
-  osm_id int,
+  osm_id bigint,
   name text,
   place text,
   okato_user text,
@@ -86,7 +86,7 @@ CREATE INDEX tmp_src_settlement_polygon_geom ON tmp_src_settlement_polygon USING
 CREATE INDEX tmp_src_settlement_point_geom ON tmp_src_settlement_point USING gist (geom);
 CREATE INDEX tmp_src_settlement_polygon_name ON tmp_src_settlement_polygon (name);
 CREATE INDEX tmp_src_settlement_point_name ON tmp_src_settlement_point (name);
-  
+
 
 --@: log truncate settlement
 TRUNCATE settlement;
@@ -95,46 +95,46 @@ TRUNCATE settlement;
 INSERT INTO settlement (id, point_osm_id, polygon_osm_id, name,
                         place, geom_point, geom_polygon, okato_user,
                         admin_levels, kladr_user)
-SELECT 
-	nextval('settlement_id_seq') AS id,
-	n.osm_id AS point_osm_id,
-	p.osm_id AS polygon_osm_id, 
-	regexp_replace(COALESCE(n.name, p.name),'ё','е') AS name,
-	n.place AS place,
-	COALESCE(n.geom, ST_PointOnSurface(p.geom)) AS geom_point,
-	p.geom AS geom_polygon,
-	COALESCE(n.okato_user, p.okato_user),
-	string_to_array(COALESCE(n.admin_level, p.admin_level), ';'),
-	COALESCE(n.kladr_user, p.kladr_user)
+SELECT
+    nextval('settlement_id_seq') AS id,
+    n.osm_id AS point_osm_id,
+    p.osm_id AS polygon_osm_id,
+    regexp_replace(COALESCE(n.name, p.name),'ё','е') AS name,
+    n.place AS place,
+    COALESCE(n.geom, ST_PointOnSurface(p.geom)) AS geom_point,
+    p.geom AS geom_polygon,
+    COALESCE(n.okato_user, p.okato_user),
+    string_to_array(COALESCE(n.admin_level, p.admin_level), ';'),
+    COALESCE(n.kladr_user, p.kladr_user)
 FROM tmp_src_settlement_point n
-	LEFT JOIN tmp_src_settlement_polygon p  ON 
-		(n.name = p.name OR p.name IS NULL)
-		AND n.geom && p.geom AND ST_Within(n.geom, p.geom)
+    LEFT JOIN tmp_src_settlement_polygon p  ON
+        (n.name = p.name OR p.name IS NULL)
+        AND n.geom && p.geom AND ST_Within(n.geom, p.geom)
 WHERE n.place IN ('city', 'town', 'village', 'hamlet');
 
 --@: log polygon only
 INSERT INTO settlement (id, point_osm_id, polygon_osm_id, name, place, geom_point, geom_polygon, okato_user, admin_levels, kladr_user)
-SELECT 
-	nextval('settlement_id_seq') AS id,
-	NULL AS point_osm_id,
-	p.osm_id AS polygon_osm_id, 
-	regexp_replace(p.name,'ё','е') AS name,
-	p.place AS place,
-	ST_PointOnSurface(p.geom) AS geom_point,
-	p.geom AS geom_polygon,
-	p.okato_user,
-	string_to_array(COALESCE(n.admin_level, p.admin_level), ';'),
-	COALESCE(n.kladr_user, p.kladr_user)
+SELECT
+    nextval('settlement_id_seq') AS id,
+    NULL AS point_osm_id,
+    p.osm_id AS polygon_osm_id,
+    regexp_replace(p.name,'ё','е') AS name,
+    p.place AS place,
+    ST_PointOnSurface(p.geom) AS geom_point,
+    p.geom AS geom_polygon,
+    p.okato_user,
+    string_to_array(COALESCE(n.admin_level, p.admin_level), ';'),
+    COALESCE(n.kladr_user, p.kladr_user)
 FROM tmp_src_settlement_point n
-	RIGHT JOIN tmp_src_settlement_polygon p  ON 
-		(n.name = p.name OR p.name IS NULL)
-		AND n.geom && p.geom AND ST_Within(n.geom, p.geom)
+    RIGHT JOIN tmp_src_settlement_polygon p  ON
+        (n.name = p.name OR p.name IS NULL)
+        AND n.geom && p.geom AND ST_Within(n.geom, p.geom)
 WHERE n.osm_id IS NULL;
 
 --@: log non place=* with oktmo:user
 INSERT INTO settlement (id, point_osm_id, polygon_osm_id, name, place, geom_point, geom_polygon, okato_user, admin_levels)
 SELECT nextval('settlement_id_seq') AS id,
-  osm_id as point_osm_id, 
+  osm_id as point_osm_id,
   NULL AS polygon_osm_id,
   regexp_replace(name,'ё','е') AS name,
   place,
