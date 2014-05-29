@@ -17,6 +17,7 @@
     в virtualenv поставить:
         * sqlparse
         * psycopg2
+        * sqlalchemy
 * импортировать классификаторы окато и октмо, для этого:
     ```
         # Вероятно (структура создаваемых таблиц получается другая, чем требуется в последствии в скриптах yav-ru/*-*.sql) нужно установить clscol и clscol-data: https://github.com/dezhin/clscol, https://github.com/dezhin/clscol-data и импортировать данные классификаторов в БД согласно инструкции.
@@ -37,7 +38,18 @@
             ALTER TABLE oktmo OWNER TO yav;
             ALTER TABLE oktmo_okato OWNER TO yav;
         )
+    Создать и заполнить таблицу okato_to_oktmo данными:
+        python yav-sql-run --cfg yav.cfg --run ru_classifier/oktmo_to_okato/oktmo_to_okato.sql
+
+* Настройка прав: 90-bounary-error.sql хочет права на чтение таблицы spatial_ref_sys, принадлежащей админу. Пока делаю по-тупому:
+        ALTER TABLE spatial_ref_sys OWNER TO yav;
+
+* Инициализировать БД, записав в нее необходимые sql-функции:
+        python yav-sql-run --cfg yav.cfg --run --action MD_INIT yav-ru/??-*.sql
+
     ```
+
+
 Текущее состояние проекта:
 ---------------------------
 
