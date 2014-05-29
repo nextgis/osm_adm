@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import Column as C, Unicode, ForeignKey, SmallInteger, Boolean, Enum
+from sqlalchemy import Column as C, Unicode, ForeignKey, SmallInteger, BigInteger, Boolean, Enum
 from sqlalchemy.ext.declarative import declarative_base
 
 import re
@@ -62,11 +62,11 @@ _STATUS_SEARCH = []
 for itm in STATUS_SEARCH:
   n = (re.compile(itm[0], re.UNICODE), itm[1:])
   _STATUS_SEARCH.append(n)
-  
+
 def fill(start, to_len=8):
   while len(start) < to_len:
     start = start + '0'
-  return start  
+  return start
 
 Base = declarative_base()
 
@@ -85,18 +85,19 @@ class OkatoObj(Base):
     u'unknown',
     u'гор_район'                 # район города, или городского округа
   )
-  
-  code = C(Unicode(11), primary_key=True) # код ОКАТО
-  raw  = C(Unicode(255))                  # строка из ОКАТО as-is
+
+  id = C(BigInteger, primary_key=True)
+  code = C(Unicode(11), unique=True, nullable=False)         # код ОКАТО
+  raw  = C(Unicode(255))        # строка из ОКАТО as-is
 
   is_group = C(Boolean())       # это группировка ?
   parent = C(Unicode(11))       # родитель с учетом группировок
   parent_obj = C(Unicode(11))   # родитель без учета группировок
-  
+
   lvl  = C(SmallInteger())      # уровень
   cls  = C(Unicode(10))         # класс
 
-  is_settlement = C(Boolean())  # это населенный пункт 
+  is_settlement = C(Boolean())  # это населенный пункт
   is_subject = C(Boolean())     # это субъект
   name = C(Unicode(100))        # имя без статусной части
   status = C(Unicode(100))      # статусная часть
@@ -112,7 +113,7 @@ class OkatoObj(Base):
 
     # код заканчивается на n нулей
     zeroes = lambda n: self.code.endswith('0' * n)
-      
+
     # все группировки заканчиваются на '/'
     self.is_group = raw[-1] == '/'
 
@@ -142,12 +143,12 @@ class OkatoObj(Base):
               if pst < 0:
                 stderr.write(u"Не удалось определить родителя для %s %s\n" % (self.code, self.raw))
                 break
-              
+
         elif code.endswith(('00', '50')):
           self.parent = code[:5] + '000'
 
       if len(code) == 11:
-        assert code[-3:] == '000', 'Ошибка в группировке'  
+        assert code[-3:] == '000', 'Ошибка в группировке'
         self.parent = fill(code[:8])
         self.parent_obj = fill(code[:8])
 
@@ -176,7 +177,7 @@ class OkatoObj(Base):
               break
             else:
               pst = pst - 1
-              
+
         elif p1 == 2:
           self.parent_obj = code[:2] + '000000'
           if v1 in range(1, 60):
@@ -190,17 +191,17 @@ class OkatoObj(Base):
           # по описанию статуc должен зависеть от v1,
           # но на московской области это не работает,
           # поэтому город или пгт
-          
+
           # попробуем посмотреть группировку верхнего уровня
           p_code = code[:3] + '00000'
           parent_group = lookup(OkatoObj, OkatoObj.code == p_code.encode('utf-8'))
           pr = parent_group.raw
-          
+
           if pr.startswith(u'Города'):
             self.cl_class = 'город'
           elif pr.startswith(u'Поселки городского типа'):
-            self.cl_class = 'пгт'  
-            
+            self.cl_class = 'пгт'
+
         elif p1 == 5:
 
           # это значения признака в классификаторе не описано,
@@ -209,8 +210,8 @@ class OkatoObj(Base):
             self.cl_class = 'город'
           elif v1 in range(60, 100):
             self.cl_class = 'пгт'
-            
-      else:  
+
+      else:
         self.cl_level = 3
         self.parent = code[:7] + '0'
         self.parent_obj = code[:5] + '000'
@@ -221,20 +222,20 @@ class OkatoObj(Base):
               self.cl_class = 'город'
           elif v2 in range(50, 100):
             if v1 in range(60, 100):
-              self.cl_class = 'гфз_2'  
-            elif v1 in range(1, 60):   
+              self.cl_class = 'гфз_2'
+            elif v1 in range(1, 60):
               self.cl_class = 'пгт'
         elif p2 == 6:
-          # в самарской области сюда попадают устраненные НП в Тольяти  
-          self.cl_class = 'unknown'  
+          # в самарской области сюда попадают устраненные НП в Тольяти
+          self.cl_class = 'unknown'
         elif p2 == 8:
-          self.cl_class = 'сельсовет'  
+          self.cl_class = 'сельсовет'
     elif len(code) == 11 and not self.is_group:
       self.cl_level = 4
       self.cl_class = 'нп'
       self.parent = fill(code[:8], to_len=11)
       self.parent_obj = fill(code[:8])
-    
+
     # на первом уровне все субъекты, на втором только то, что еще не успели упразднить
     self.is_subject = self.cl_level == 1 or (code in SUBJ_AD)
 
@@ -247,15 +248,15 @@ class OkatoObj(Base):
           self.name = raw
           self.status = self.cl_class
         elif self.cl_class in ('пгт'):
-          self.name = raw  
-          self.status = "поселок городского типа"  
+          self.name = raw
+          self.status = "поселок городского типа"
     if len(code) == 11 and not self.is_group:
-      # сельские НП  
+      # сельские НП
       self.is_settlement = True
 
     self.lvl = self.cl_level
     self.cls = self.cl_class
-    
+
     # определяем статус
     for ss in _STATUS_SEARCH:
       m = ss[0].match(raw)
@@ -267,12 +268,12 @@ class OkatoObj(Base):
 
     if self.code in SUBJ_AD:
       self.parent = fill(self.code[:2])
-    
+
     # if self.parent in SUBJ_AD:
     #    self.parent_obj = self.parent
 
 
-       
+
 
 metadata = Base.metadata
 

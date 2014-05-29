@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*- 
-from sqlalchemy import Column as C, Unicode, String, ForeignKey, SmallInteger, Boolean, Enum, Integer
+# -*- coding: utf-8 -*-
+from sqlalchemy import Column as C, Unicode, String, ForeignKey, BigInteger, SmallInteger, Boolean, Enum, Integer
 from sqlalchemy.ext.declarative import declarative_base
 
 import re
@@ -10,7 +10,7 @@ from sys import stderr
 SUBJ_AD = ( '118',        # Ненецкий АО
             '718',        # Ханты-Манскийский АО
             '719' )       # Ямало-Ненецкий АО
-          
+
 
 Base = declarative_base()
 
@@ -25,22 +25,22 @@ SIMPLE_NAME_REs = (
              )),
   (('сф', ), (
                ( u'Города Санкт-Петербурга', ur'Город Санкт-Петербург'),
-	       ( u'Города Москвы', ur'Город Москва' ),
-	       ( u'Республики Алтай' , ur'Республика Алтай'),
+           ( u'Города Москвы', ur'Город Москва' ),
+           ( u'Республики Алтай' , ur'Республика Алтай'),
                ( u'Адыгеи', ur'Адыгея'),
                ( u'Республики Тывы', ur'Республика Тыва'),
                ( u'Татарстана', ur'Татарстан'),
-	       ( u'Еврейской автономной области', ur'Еврейская автономная область'),
+           ( u'Еврейской автономной области', ur'Еврейская автономная область'),
                ( u'Чукотского автономного округа',  ur'Чукотский автономный округ'),
                ( u'\s\-\sЧувашии', ur'(Чувашия)'),
                ( u'ского\s+края', ur'ский край'),
                ( u'ой\s+области', ur'ая область'),
                ( u'Республики\s+(.*)ии', ur'Республика \1ия'),
-	       ( u'кой Республики', ur'ская Республика'),
-	       ( u'Муниципальные образования ', ur''),
+           ( u'кой Республики', ur'ская Республика'),
+           ( u'Муниципальные образования ', ur''),
                ( u'\(города федерального значения\)', ur''),
                ( u'\(столицы Российской Федерации города федерального значения\)', ''),
-	       ( u'Республики', ur'Республика')
+           ( u'Республики', ur'Республика')
               )),
 )
 
@@ -54,18 +54,18 @@ class OktmoObj(Base):
 
   CLS_ENUM = (
     u'сф',                      # субъект
-    
+
     u'мр',                      # муниципальный район
     u'го',                      # городской округ
-    
+
     u'гп',                      # городское поселение
     u'сп',                      # сельское поселение
     u'мс',                      # межселенная территория
 
     u'тгфз'                     # внутригородская территория города федерального значения
   )
-  
-  id         = C(Integer(), primary_key=True)
+
+  id         = C(BigInteger, primary_key=True)
   code       = C(Unicode(8))                          # код ОКТМО
   raw        = C(Unicode(255))                        # строка из ОКТМО
   parent     = C(Unicode(8))                          # родитель с учетом группировки
@@ -77,14 +77,14 @@ class OktmoObj(Base):
 
   is_subject = C(Boolean())                           # это субъект?
   simple_name = C(Unicode(255))                       # упрощенное название
-  
+
   def parse(self, lookup=None):
     self.id = int(self.code)
 
     # убираем сноску с конца строки
     if self.raw[-1] == '*':
       self.raw = self.raw[:-1]
-    
+
     # код заканчивается на n нулей
     zeroes = lambda n: self.code.endswith('0' * n)
 
@@ -115,9 +115,9 @@ class OktmoObj(Base):
         # группировка МР и ГО внутри авт. округов
         self.parent = first_fill(3)
       elif zeroes(2):
-        self.parent = first_fill(5)  
+        self.parent = first_fill(5)
     else:
-      self.is_group = False  
+      self.is_group = False
 
       if zeroes(6):
         self.lvl = 1
@@ -144,20 +144,20 @@ class OktmoObj(Base):
           elif g1 in range(11,50):
             self.cls = 'мр'
           elif g1 in range(50,100):
-            self.cls = 'го'  
-                
+            self.cls = 'го'
+
         if not self.cls:
           stderr.write(u'Неопознаный признак P1 %d в %s %s\n' % (p1, self.code, self.raw) )
 
       else:
-        self.lvl = 3  
+        self.lvl = 3
         if p2 == 1:
           self.cls = 'гп'
         elif p2 == 4:
           self.cls = 'сп'
         elif p2 == 7:
-          self.cls = 'мс'  
-          
+          self.cls = 'мс'
+
         if not self.cls:
           stderr.write(u'Неопознаный признак P2 %d в %s %s\n' % (p2, self.code, self.raw))
 
@@ -166,7 +166,7 @@ class OktmoObj(Base):
         self.parent = fill( self.code[ :{2: 3, 3: 6} [self.lvl]] )
 
     # parent_obj
-    if self.parent:    
+    if self.parent:
       op = lookup(OktmoObj, OktmoObj.code == self.parent)
       if not op:
         stderr.write(u'Неверный родитель для %s %s\n' % (self.code, self.raw) )
@@ -176,7 +176,7 @@ class OktmoObj(Base):
         self.parent_obj = op.parent_obj
       else:
         stderr.write(u"Двойная группировка: %s %s\n" % (self.code, self.raw))
-        
+
     if not self.is_group:
       self.simple_name = self.raw
       for r in SIMPLE_NAME_REs:
@@ -186,7 +186,7 @@ class OktmoObj(Base):
             self.simple_name = exp.sub(p[1], self.simple_name)
 
 
-        
+
 
 class OktmoOkatoObj(Base):
   __tablename__ = 'oktmo_okato'
@@ -196,14 +196,14 @@ class OktmoOkatoObj(Base):
 
 metadata = Base.metadata
 
-def reader(src, lookup=None):  
-  first = True  
+def reader(src, lookup=None):
+  first = True
   for l in src:
     i = l.decode('utf-8')[:-1]
     if i == '':                            # пустая строка, след запись по октмо
       first = True                         # а это был разделитель
       continue
-      
+
     if first:                              # в строке запись ОКТМО
       first = False                        # след. будет НП по ОКАТО
       (code, raw) = i.split("\t")
@@ -211,9 +211,9 @@ def reader(src, lookup=None):
       obj.code = code
       obj.raw = raw
       obj.parse(lookup=lookup)
-      
+
       yield obj
-      
+
     else:                                  # это запись по ОКАТО
       a = i.split("\t")
       if len(a) == 1:                      # нет кода имени НП
@@ -224,9 +224,9 @@ def reader(src, lookup=None):
 
       # непонятная странность: коды ОКАТО в ОКТМО дополнены нулями
       # до 11 разрядов, но смысла в этом мало очень,
-      # т.к. коды получаются уровня НП в сельсовете даже для городов  
+      # т.к. коды получаются уровня НП в сельсовете даже для городов
       if len(okato_code) == 11 and okato_code.endswith('000'):
-        okato_code = okato_code[:-3]  
+        okato_code = okato_code[:-3]
 
       obj_okato = OktmoOkatoObj()
       obj_okato.oktmo = obj.code
