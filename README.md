@@ -6,15 +6,18 @@
 Установка:
 ----------
 * создание БД yav:
-```
+```sql
   CREATE ROLE yav WITH LOGIN;
   CREATE DATABASE yav WITH OWNER=yav;
-  # В БД yav от админа выполнить:
+```
+
+В БД yav от админа выполнить:
+```sql
   CREATE EXTENSION postgis;
 ```
 * установить зависимости:
   * osm2pgsql
-  * virtualenv, в нём поставить:
+  * virtualenv (```sudo pip install virtualenv```), в нём поставить:
     * sqlparse
     * psycopg2
     * sqlalchemy
