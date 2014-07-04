@@ -19,17 +19,17 @@
         * psycopg2
         * sqlalchemy
 * импортировать классификаторы окато и октмо, для этого:
-    ```
-        # Вероятно (структура создаваемых таблиц получается другая, чем требуется в последствии в скриптах yav-ru/*-*.sql) нужно установить clscol и clscol-data: https://github.com/dezhin/clscol, https://github.com/dezhin/clscol-data и импортировать данные классификаторов в БД согласно инструкции.
+ * Вероятно (структура создаваемых таблиц получается другая, чем требуется в последствии в скриптах yav-ru/*-*.sql) нужно установить clscol и clscol-data: https://github.com/dezhin/clscol, https://github.com/dezhin/clscol-data и импортировать данные классификаторов в БД согласно инструкции.
+```
         # (
         #   загрузка классификатора командой:
         #   env/bin/clscol import --db postgresql://yav@localhost/yav okato  clscol-data/okato/okato-154.yaml
         #   env/bin/clscol import --db postgresql://yav@localhost/yav oktmo  clscol-data/oktmo/oktmo-079.yaml
         # )
         # Скорее всего эти данные нужны для скриптов ru_classifier/shell
-    ```
-    Создать таблицы okato и oktmo при помощи скриптов ru_classifier/shell:
-    ```
+``` 
+ * Создать таблицы okato и oktmo при помощи скриптов ru_classifier/shell:
+```
         ./shell.py --create --load --from data/okato okato
         ./shell.py --create --load --from data/oktmo oktmo
         (
@@ -38,16 +38,21 @@
             ALTER TABLE oktmo OWNER TO yav;
             ALTER TABLE oktmo_okato OWNER TO yav;
         )
-    Создать и заполнить таблицу okato_to_oktmo данными:
+```
+ * Создать и заполнить таблицу okato_to_oktmo данными:
+```
         python yav-sql-run --cfg yav.cfg --run ru_classifier/oktmo_to_okato/oktmo_to_okato.sql
+```
 
 * Настройка прав: 90-bounary-error.sql хочет права на чтение таблицы spatial_ref_sys, принадлежащей админу. Пока делаю по-тупому:
+```
         ALTER TABLE spatial_ref_sys OWNER TO yav;
+```
 
 * Инициализировать БД, записав в нее необходимые sql-функции:
+```
         python yav-sql-run --cfg yav.cfg --run --action MD_INIT yav-ru/??-*.sql
-
-    ```
+```
 
 
 Текущее состояние проекта:
