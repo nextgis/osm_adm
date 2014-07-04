@@ -13,11 +13,12 @@
   CREATE EXTENSION postgis;
 ```
 * установить зависимости:
-    osm2pgsql
-    в virtualenv поставить:
-        * sqlparse
-        * psycopg2
-        * sqlalchemy
+  * osm2pgsql
+  * virtualenv, в нём поставить:
+    * sqlparse
+    * psycopg2
+    * sqlalchemy
+        
 * импортировать классификаторы окато и октмо, для этого:
  * Вероятно (структура создаваемых таблиц получается другая, чем требуется в последствии в скриптах yav-ru/*-*.sql) нужно установить clscol и clscol-data: https://github.com/dezhin/clscol, https://github.com/dezhin/clscol-data и импортировать данные классификаторов в БД согласно инструкции.
 ```
