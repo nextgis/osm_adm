@@ -109,3 +109,7 @@
     Экспорт таблиц постгрес в шейпы, расчет статистик по количеству импортированых объектов
     yav-dc/export
 ```
+
+License
+-------------
+This program is licensed under GNU GPL v2 or any later version
